@@ -12,16 +12,18 @@ def download_video():
         return jsonify({'error': 'Missing URL parameter'}), 400
 
     ydl_opts = {
-        'cookiefile': 'cookies.txt',  # Ensure Railway detects this file
-        'format': 'bestaudio/best' if format_type == 'mp3' else 'bestvideo+bestaudio',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }] if format_type == 'mp3' else [],
-        'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save in 'downloads' folder
-        'noplaylist': True,
-    }
+    'cookiefile': 'cookies.txt',  
+    'format': 'bestaudio/best' if format_type == 'mp3' else 'bestvideo+bestaudio',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }] if format_type == 'mp3' else [],
+    'ffmpeg_location': '/usr/bin/ffmpeg',  # Specify FFmpeg path
+    'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  
+    'noplaylist': True,
+}
+
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
