@@ -1,20 +1,20 @@
-# Use a base Python image
+# Use the official Python image
 FROM python:3.12
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install necessary system dependencies
 RUN apt-get update && apt-get install -y ffmpeg gcc g++ make
 
-# Copy the project files
+# Copy project files
 COPY . .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port
+# Expose the application port
 EXPOSE 5000
 
-# Start the application
+# Run the application
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
