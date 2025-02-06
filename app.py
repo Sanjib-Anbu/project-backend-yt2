@@ -1,38 +1,37 @@
-from flask import Flask, request, Response
+from flask import Flask, request, jsonify
 import yt_dlp
-import io
 
 app = Flask(__name__)
 
-@app.route('/download')
-def download():
+@app.route('/download', methods=['GET'])
+def download_video():
     url = request.args.get('url')
-    format_type = request.args.get('format')
+    format_type = request.args.get('format', 'mp4')  # Default to MP4 if not specified
 
-    if not url or format_type not in ['mp3', 'mp4']:
-        return {"error": "Invalid request"}, 400
+    if not url:
+        return jsonify({'error': 'Missing URL parameter'}), 400
 
     ydl_opts = {
+        'cookiefile': 'cookies.txt',  # Ensure Railway detects this file
         'format': 'bestaudio/best' if format_type == 'mp3' else 'bestvideo+bestaudio',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }] if format_type == 'mp3' else [],
-        'outtmpl': '-',  # "-" tells yt-dlp to write to stdout (in memory)
+        'outtmpl': 'downloads/%(title)s.%(ext)s',  # Save in 'downloads' folder
         'noplaylist': True,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        buffer = io.BytesIO()
-        ydl.download([url])
-        buffer.seek(0)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            file_name = ydl.prepare_filename(info)
 
-    mime_type = 'audio/mpeg' if format_type == 'mp3' else 'video/mp4'
-    
-    return Response(buffer, mimetype=mime_type, headers={
-        'Content-Disposition': f'attachment; filename="download.{format_type}"'
-    })
+        return jsonify({'message': 'Download successful', 'file': file_name})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
